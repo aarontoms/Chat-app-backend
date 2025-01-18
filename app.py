@@ -36,8 +36,8 @@ def send(groupid):
     return jsonify({"status": "success"}), 200
 
 @app.route('/<groupid>/send', methods=['GET'])
-def test():
-    return jsonify({"status": "success"}), 200
+def test(groupid):
+    return jsonify({"status": "success", "message":groupid}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
