@@ -20,6 +20,7 @@ def index():
 @app.route('/<groupid>/send', methods=['POST'])
 def send(groupid):
     data = request.get_json()
+    print(data)
     local_groupid = data.get("local_groupid")
     messageid = data.get("messageid")
     senderid = data.get("sender")
