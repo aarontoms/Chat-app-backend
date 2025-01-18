@@ -13,11 +13,11 @@ r = redis.Redis(host=host, port=port, password=password)
 
 ttl = 600  
 
-app.route('/', methods=['GET'])
+@app.route('/', methods=['GET'])
 def index():
     return jsonify({"status": "success"}), 200
 
-app.route('/<groupid>/send', methods=['POST'])
+@app.route('/<groupid>/send', methods=['POST'])
 def send(groupid):
     data = request.get_json()
     local_groupid = data.get("local_groupid")
@@ -34,7 +34,7 @@ def send(groupid):
 
     return jsonify({"status": "success"}), 200
 
-app.route('/<groupid>/send', methods=['GET'])
+@app.route('/<groupid>/send', methods=['GET'])
 def test():
     return jsonify({"status": "success"}), 200
 
