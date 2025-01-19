@@ -1,9 +1,11 @@
 import redis
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True, resources={r"*": {"origins": "*"}})
 
 load_dotenv()
 host = os.getenv("REDIS_HOST")
@@ -12,6 +14,18 @@ password = os.getenv("REDIS_PASSWORD")
 r = redis.Redis(host=host, port=port, password=password)
 
 ttl = 600  
+
+@app.route('/', methods=['OPTIONS'])
+@app.route('/<path:path>', methods=['OPTIONS'])
+@app.route('/*', methods=['OPTIONS'])
+def handle_options(path=None):
+    response = Response()
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Max-Age'] = '86400'
+    return response
 
 @app.route('/', methods=['GET'])
 def index():
