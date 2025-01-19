@@ -21,13 +21,13 @@ def index():
 def send(groupid):
     data = request.get_json()
     print(data)
-    local_groupid = data.get("local_groupid")
-    messageid = data.get("messageid")
-    senderid = data.get("sender")
-    message_content = data.get("message")
+    session_groupid = data.get("session_groupid")
+    sender = data.get("username")
+    message_content = data.get("text")
+    messageid = r.incr(f"{groupid}:counter")
     msg = {
         "messageid": messageid,
-        "sender": senderid,
+        "sender": sender,
         "message": message_content,
     }
     r.hset(f"{groupid}:messages:{messageid}", mapping=msg)
