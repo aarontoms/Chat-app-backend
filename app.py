@@ -13,7 +13,7 @@ port = os.getenv("REDIS_PORT")
 password = os.getenv("REDIS_PASSWORD")
 r = redis.Redis(host=host, port=port, password=password)
 
-ttl = 600  
+ttl = 60
 
 @app.route('/', methods=['OPTIONS'])
 @app.route('/<path:path>', methods=['OPTIONS'])
@@ -46,8 +46,9 @@ def send(groupid):
     }
     r.hset(f"{groupid}:messages:{messageid}", mapping=msg)
     r.expire(f"{groupid}:messages:{messageid}", ttl)
+    r.expire(f"{groupid}:counter", ttl + 10)
 
-    return jsonify({"status": "success"}), 200
+    return jsonify({"status": "success", "messageid": messageid}), 200
 
 @app.route('/<groupid>/send', methods=['GET'])
 def test(groupid):
