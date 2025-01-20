@@ -45,8 +45,8 @@ def send(groupid):
         "sender": sender,
         "message": message_content,
     }
-    r.hset(f"{groupid}:messages:{messageid}", mapping=msg)
-    r.expire(f"{groupid}:messages:{messageid}", ttl)
+    r.hset(f"{groupid}:messages:{id}", mapping=msg)
+    r.expire(f"{groupid}:messages:{id}", ttl)
     r.expire(f"{groupid}:counter", ttl + 10)
 
     return jsonify({"status": "success", "messageid": messageid}), 200
