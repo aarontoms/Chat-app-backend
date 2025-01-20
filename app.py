@@ -55,5 +55,14 @@ def send(groupid):
 def test(groupid):
     return jsonify({"status": "success", "message":groupid}), 200
 
+@app.route('/<groupid>/postname', methods=['POST'])
+def postname(groupid):
+    data = request.get_json()
+    name = data.get("username")
+    r.set(f"{groupid}:username", name)
+    r.expire(f"{groupid}:username", ttl + 20)
+    return jsonify({"status": "success"}), 200
+
+
 if __name__ == '__main__':
     app.run(debug=True)
