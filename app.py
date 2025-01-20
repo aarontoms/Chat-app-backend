@@ -38,9 +38,10 @@ def send(groupid):
     session_groupid = data.get("session_groupid")
     sender = data.get("username")
     message_content = data.get("text")
+    id = data.get("id")
     messageid = r.incr(f"{groupid}:counter")
     msg = {
-        "messageid": messageid,
+        "messageid": id,
         "sender": sender,
         "message": message_content,
     }
