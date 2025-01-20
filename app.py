@@ -47,6 +47,7 @@ def send(groupid):
     }
     r.hset(f"{groupid}:messages:{id}", mapping=msg)
     r.expire(f"{groupid}:messages:{id}", ttl)
+    r.expire(f"{groupid}:joined_users", ttl + 20)
     # r.expire(f"{groupid}:counter", ttl + 10)
 
     return jsonify({"status": "success", "messageid": id}), 200
@@ -59,9 +60,9 @@ def test(groupid):
 def postname(groupid):
     data = request.get_json()
     name = data.get("username")
-    r.set(f"{groupid}:username", name)
-    r.expire(f"{groupid}:username", ttl + 20)
-    return jsonify({"status": "success"}), 200
+    r.rpush(f"{groupid}:joined_users", name)
+    r.expire(f"{groupid}:joined_users", ttl + 20)
+    return jsonify({"status": "success", "username": name}), 200
 
 
 if __name__ == '__main__':
