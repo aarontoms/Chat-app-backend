@@ -39,7 +39,7 @@ def send(groupid):
     sender = data.get("username")
     message_content = data.get("text")
     id = data.get("id")
-    messageid = r.incr(f"{groupid}:counter")
+    # messageid = r.incr(f"{groupid}:counter")
     msg = {
         "messageid": id,
         "sender": sender,
@@ -47,9 +47,9 @@ def send(groupid):
     }
     r.hset(f"{groupid}:messages:{id}", mapping=msg)
     r.expire(f"{groupid}:messages:{id}", ttl)
-    r.expire(f"{groupid}:counter", ttl + 10)
+    # r.expire(f"{groupid}:counter", ttl + 10)
 
-    return jsonify({"status": "success", "messageid": messageid}), 200
+    return jsonify({"status": "success", "messageid": id}), 200
 
 @app.route('/<groupid>/send', methods=['GET'])
 def test(groupid):
