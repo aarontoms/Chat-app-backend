@@ -2,7 +2,7 @@ import redis
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
+import os, random, string, bcrypt
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"*": {"origins": "*"}})
@@ -27,9 +27,16 @@ def handle_options(path=None):
     response.headers['Access-Control-Max-Age'] = '86400'
     return response
 
-@app.route('/', methods=['GET'])
-def index():
-    return jsonify({"status": "success"}), 200
+@app.route('/create', methods=['POST'])
+def create():
+    data = request.get_json()
+    password = data.get("password")
+    password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    roomid = ''.join(random.choices(string.ascii_uppercase, k=5))
+    r.set(f"{roomid}:password", password)
+    r.expire(f"{roomid}:password", ttl + 20)
+
+    return jsonify({"status": "success", "roomid": roomid}), 200
 
 @app.route('/<groupid>/send', methods=['POST'])
 def send(groupid):
@@ -39,7 +46,6 @@ def send(groupid):
     sender = data.get("username")
     message_content = data.get("text")
     id = data.get("id")
-    # messageid = r.incr(f"{groupid}:counter")
     msg = {
         "messageid": id,
         "sender": sender,
@@ -48,13 +54,9 @@ def send(groupid):
     r.hset(f"{groupid}:messages:{id}", mapping=msg)
     r.expire(f"{groupid}:messages:{id}", ttl)
     r.expire(f"{groupid}:joined_users", ttl + 20)
-    # r.expire(f"{groupid}:counter", ttl + 10)
+    r.expire(f"{groupid}:password", ttl + 20)
 
     return jsonify({"status": "success", "messageid": id}), 200
-
-@app.route('/<groupid>/send', methods=['GET'])
-def test(groupid):
-    return jsonify({"status": "success", "message":groupid}), 200
 
 @app.route('/<groupid>/postname', methods=['POST'])
 def postname(groupid):
@@ -62,8 +64,20 @@ def postname(groupid):
     name = data.get("username")
     r.rpush(f"{groupid}:joined_users", name)
     r.expire(f"{groupid}:joined_users", ttl + 20)
+    r.expire(f"{groupid}:password", ttl + 20)
     return jsonify({"status": "success", "username": name}), 200
 
+@app.route('/<groupid>/postpassword', methods=['POST'])
+def postpassword(groupid):
+    data = request.get_json()
+    password = data.get("password")
+    stored_password = r.get(f"{groupid}:password")
+    if not stored_password:
+        return jsonify({"status": 404, "message": "Room does not exist"}), 404
+    if bcrypt.checkpw(password.encode(), stored_password):
+        return jsonify({"status": 200, "message": "Joined chat"}), 200
+    else:
+        return jsonify({"status": 401, "message": "Invalid password"}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)
