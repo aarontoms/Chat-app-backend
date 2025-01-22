@@ -1,11 +1,13 @@
 import redis
 from flask import Flask, request, jsonify, Response
+from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os, random, string, bcrypt
+import os, random, string, bcrypt, json
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 load_dotenv()
 host = os.getenv("REDIS_HOST")
@@ -13,7 +15,7 @@ port = os.getenv("REDIS_PORT")
 password = os.getenv("REDIS_PASSWORD")
 r = redis.Redis(host=host, port=port, password=password)
 
-ttl = 60
+ttl = 600
 
 @app.route('/', methods=['OPTIONS'])
 @app.route('/<path:path>', methods=['OPTIONS'])
@@ -36,7 +38,7 @@ def create():
     r.set(f"{roomid}:password", password)
     r.expire(f"{roomid}:password", ttl + 20)
 
-    return jsonify({"status": "success", "roomid": roomid}), 200
+    return jsonify({"roomid": roomid}), 200
 
 @app.route('/<groupid>/send', methods=['POST'])
 def send(groupid):
@@ -61,11 +63,18 @@ def send(groupid):
 @app.route('/<groupid>/postname', methods=['POST'])
 def postname(groupid):
     data = request.get_json()
-    name = data.get("username")
-    r.rpush(f"{groupid}:joined_users", name)
+    username = data.get("username")
+    userid = data.get("userid")
+    r.rpush(f"{groupid}:joined_users", json.dumps(data))
     r.expire(f"{groupid}:joined_users", ttl + 20)
     r.expire(f"{groupid}:password", ttl + 20)
-    return jsonify({"status": "success", "username": name}), 200
+    
+    joined_users = []
+    for user in r.lrange(f"{groupid}:joined_users", 0, -1):
+        joined_users.append(user.decode())
+    socketio.emit(f"{groupid}_update", {"joined_users": joined_users})
+    
+    return jsonify({"username": username, "userid": userid, "roomid": groupid}), 200
 
 @app.route('/<groupid>/postpassword', methods=['POST'])
 def postpassword(groupid):
@@ -80,4 +89,4 @@ def postpassword(groupid):
         return jsonify({"status": 401, "message": "Invalid password"}), 401
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app)
