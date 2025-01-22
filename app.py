@@ -72,7 +72,8 @@ def postname(groupid):
     joined_users = []
     for user in r.lrange(f"{groupid}:joined_users", 0, -1):
         joined_users.append(user.decode())
-    socketio.emit(f"{groupid}_update", {"joined_users": joined_users})
+    print(joined_users)
+    socketio.emit(f"{groupid}_joined", {"joined_users": joined_users})
     
     return jsonify({"username": username, "userid": userid, "roomid": groupid}), 200
 
@@ -87,6 +88,17 @@ def postpassword(groupid):
         return jsonify({"status": 200, "message": "Joined chat"}), 200
     else:
         return jsonify({"status": 401, "message": "Invalid password"}), 401
+
+@app.route('/<groupid>/getname', methods=['POST'])
+def getname(groupid):
+    data = request.get_json()
+    userid = data.get("userid")
+    for user in r.lrange(f"{groupid}:joined_users", 0, -1):
+        user = json.loads(user.decode())
+        if user.get("userid") == userid:
+            return jsonify(user), 200
+        
+    return jsonify({"status": 404, "message": "User not found"}), 404
 
 if __name__ == '__main__':
     socketio.run(app)
