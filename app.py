@@ -93,10 +93,12 @@ def postpassword(groupid):
 def getname(groupid):
     data = request.get_json()
     userid = data.get("userid")
-    for user in r.lrange(f"{groupid}:joined_users", 0, -1):
-        user = json.loads(user.decode())
+    
+    joined_users = [user.decode() for user in r.lrange(f"{groupid}:joined_users", 0, -1)]
+    for user in joined_users:
+        user = json.loads(user)
         if user.get("userid") == userid:
-            return jsonify(user), 200
+            return jsonify({"username": user["username"], "users": joined_users}), 200
         
     return jsonify({"status": 404, "message": "User not found"}), 404
 
