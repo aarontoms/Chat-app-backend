@@ -40,26 +40,6 @@ def create():
 
     return jsonify({"roomid": roomid}), 200
 
-@app.route('/<groupid>/send', methods=['POST'])
-def send(groupid):
-    data = request.get_json()
-    print(data)
-    session_groupid = data.get("session_groupid")
-    sender = data.get("username")
-    message_content = data.get("text")
-    id = data.get("id")
-    msg = {
-        "messageid": id,
-        "sender": sender,
-        "message": message_content,
-    }
-    r.hset(f"{groupid}:messages:{id}", mapping=msg)
-    r.expire(f"{groupid}:messages:{id}", ttl)
-    r.expire(f"{groupid}:joined_users", ttl + 20)
-    r.expire(f"{groupid}:password", ttl + 20)
-
-    return jsonify({"status": "success", "messageid": id}), 200
-
 @app.route('/<groupid>/postname', methods=['POST'])
 def postname(groupid):
     data = request.get_json()
@@ -101,6 +81,44 @@ def getname(groupid):
             return jsonify({"username": user["username"], "users": joined_users}), 200
         
     return jsonify({"status": 404, "message": "User not found"}), 404
+
+@app.route('/<groupid>/send', methods=['POST'])
+def send(groupid):
+    data = request.get_json()
+    print(data)
+    sender = data.get("sender")
+    message_content = data.get("text")
+    id = data.get("id")
+    timestamp = data.get("time")
+    msg = {
+        "sender": sender,
+        "message": message_content,
+        "messageid": id,
+        "time": timestamp
+    }
+    print(msg)
+    r.hset(f"{groupid}:messages:{id}", mapping=msg)
+    r.expire(f"{groupid}:messages:{id}", ttl)
+    r.expire(f"{groupid}:joined_users", ttl + 20)
+    r.expire(f"{groupid}:password", ttl + 20)
+    socketio.emit(f"{groupid}_message", msg)
+
+    return jsonify({"status": "success", "messageid": id}), 200
+
+@app.route('/<groupid>/getmessages', methods=['POST'])
+def getmessages(groupid):
+    data = request.get_json()
+    username = data.get("username")
+    joined_users = [json.loads(user.decode()) for user in r.lrange(f"{groupid}:joined_users", 0, -1)]
+    if not any(user.get("username") == username for user in joined_users):
+        return jsonify({"status": 404, "message": f"User {username} not found"}), 404
+
+    messages = []
+    for key in r.scan_iter(f"{groupid}:messages:*"):
+        message = r.hgetall(key)
+        messages.append({k.decode(): v.decode() for k, v in message.items()})
+
+    return jsonify({"messages": messages}), 200
 
 if __name__ == '__main__':
     socketio.run(app)
