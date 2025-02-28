@@ -34,7 +34,7 @@ def create():
     data = request.get_json()
     password = data.get("password")
     password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    roomid = ''.join(random.choices(string.ascii_uppercase, k=5))
+    roomid = ''.join(random.choices(string.ascii_uppercase, k=3))
     r.set(f"{roomid}:password", password)
     r.expire(f"{roomid}:password", ttl + 20)
 
