@@ -29,6 +29,11 @@ def handle_options(path=None):
     response.headers['Access-Control-Max-Age'] = '86400'
     return response
 
+@app.route('/clear-redis', methods=['GET'])
+def clear_redis():
+    r.flushdb()
+    return jsonify({"message": "Redis database cleared"}), 200
+
 @app.route('/create', methods=['POST'])
 def create():
     data = request.get_json()
